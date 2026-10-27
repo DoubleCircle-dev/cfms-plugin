@@ -22,15 +22,17 @@ node --test                                            # 工具链测试
 
 发布方用 Ed25519 私钥签插件包与 catalog：
 
-- `publisher.json`：仓库内配置，记录发布方 `key_id` 与公钥（**只有公钥**）。
-- `keys/<key_id>.json`：私钥文件，已被 gitignore，绝不提交；轮换时
+- 签名 key id：`cfms-plugin`
+- 签名公钥：`cf721edd3d63a06f07c1be2099e7dfbf407c11a4726ad422415314ce6ab961de`
+- `publisher.json`：仓库内配置，记录上述 `key_id` 与公钥（**只有公钥**）。
+- `keys/cfms-plugin.json`：私钥文件，已被 gitignore，绝不提交；轮换时
   `node tools/keygen.mjs --id <new-id> --publisher --force`。
 - `pack` 与 `catalog build` 默认使用 `publisher.json` 指向的密钥签名，无需额外参数。
 
-构建客户端时注入对应公钥（取自 `publisher.json`）：
+构建客户端时注入该公钥（key id 必须与签名包时使用的 `key_id` 完全一致）：
 
 ```powershell
-$env:CFMS_EXTENSION_TRUSTED_KEYS = "<publisher.json 的 key_id>:<public_key_hex>"
+$env:CFMS_EXTENSION_TRUSTED_KEYS = "cfms-plugin:cf721edd3d63a06f07c1be2099e7dfbf407c11a4726ad422415314ce6ab961de"
 ```
 
 客户端当前 `USER_EXTENSIONS_ENABLED = false`，且只信任编译期注入的公钥
