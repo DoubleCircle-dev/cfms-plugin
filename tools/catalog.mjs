@@ -24,10 +24,11 @@ try {
       keyPaths: args.values.key ? [args.values.key] : [],
       keysDir,
       publicKeyArgs: args.values['public-key'] ? args.values['public-key'].split(',') : [],
+      publisherFile: path.resolve('publisher.json'),
     });
     const signKey = args.values['sign-key']
       ? await resolveSigningKey({ keyPath: args.values['sign-key'] })
-      : await resolveSigningKey({ keysDir });
+      : await resolveSigningKey({ keysDir, publisherFile: path.resolve('publisher.json') });
     if (!publicKeys[signKey.key_id]) {
       publicKeys[signKey.key_id] = signKey.public_key_hex;
     }
@@ -90,6 +91,7 @@ try {
     const publicKeys = await resolveTrustedKeys({
       keysDir,
       publicKeyArgs: args.values['public-key'] ? args.values['public-key'].split(',') : [],
+      publisherFile: path.resolve('publisher.json'),
     });
     const result = verifyCatalog(catalogBytes, signatureBytes, publicKeys);
     printWarnings(result.warnings);

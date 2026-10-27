@@ -20,6 +20,7 @@ try {
     keyPaths: args.values.key ? [args.values.key] : [],
     keysDir: path.resolve(args.values.keys ?? 'keys'),
     publicKeyArgs: args.values['public-key'] ? args.values['public-key'].split(',') : [],
+    publisherFile: path.resolve('publisher.json'),
   });
   const results = [];
   let failed = false;

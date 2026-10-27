@@ -20,7 +20,11 @@ const keysDir = path.resolve(args.values.keys ?? 'keys');
 const outDir = path.resolve(args.values.out ?? 'dist');
 
 try {
-  const key = await resolveSigningKey({ keyPath: args.values.key, keysDir });
+  const key = await resolveSigningKey({
+    keyPath: args.values.key,
+    keysDir,
+    publisherFile: path.resolve('publisher.json'),
+  });
   const result = await packPluginDirectory(path.resolve(sourceDir), {
     privateKeyHex: key.private_key_hex,
     keyId: key.key_id,

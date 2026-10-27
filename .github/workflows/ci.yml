@@ -17,8 +17,8 @@ jobs:
       - name: Run toolchain tests
         run: npm test
 
-      - name: Generate ephemeral signing key
-        run: node tools/keygen.mjs
+      - name: Generate ephemeral publisher key
+        run: node tools/keygen.mjs --id ci-publisher --publisher --force
 
       - name: Generate and pack a plugin
         run: |

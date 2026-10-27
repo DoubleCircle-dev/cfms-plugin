@@ -1,10 +1,11 @@
-// 本地开发签名密钥：生成、保存、加载。
+// 本地开发签名密钥：生成、保存、加载；以及发布方签名密钥配置（publisher.json）。
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { generateKeyPair } from './crypto.mjs';
 import { isPlainObject } from './util.mjs';
 
 export const KEY_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+export const DEFAULT_PUBLISHER_FILE = 'publisher.json';
 
 /** @returns {{key_id: string, private_key_hex: string, public_key_hex: string, created_at: string}} */
 export function createKeyRecord(keyId) {
@@ -76,12 +77,75 @@ export async function loadKeysDirectory(keysDir) {
   return keys;
 }
 
-/** 解析 --key 参数、密钥目录与默认密钥。 */
-export async function resolveSigningKey({ keyPath, keysDir = 'keys' } = {}) {
+/** 读取发布方签名配置（publisher.json）；不存在返回 null。 */
+export async function loadPublisherConfig(file = DEFAULT_PUBLISHER_FILE) {
+  let raw;
+  try {
+    raw = await readFile(file, 'utf8');
+  } catch (cause) {
+    if (cause.code === 'ENOENT') return null;
+    throw new Error(`无法读取 ${file}: ${cause.message}`);
+  }
+  let config;
+  try {
+    config = JSON.parse(raw);
+  } catch (cause) {
+    throw new Error(`${file} 不是合法 JSON: ${cause.message}`);
+  }
+  if (!isPlainObject(config)
+    || typeof config.key_id !== 'string'
+    || !KEY_ID_PATTERN.test(config.key_id)
+    || !/^[0-9a-fA-F]{64}$/.test(config.public_key_hex ?? '')) {
+    throw new Error(`${file} 结构不正确（需要 key_id 与 64 hex 的 public_key_hex）`);
+  }
+  if (config.private_key_file !== undefined && typeof config.private_key_file !== 'string') {
+    throw new Error(`${file}.private_key_file 必须是字符串`);
+  }
+  return { ...config, public_key_hex: config.public_key_hex.toLowerCase() };
+}
+
+/** 写入/覆盖发布方配置；public_key_hex 会进入仓库，私钥不会。 */
+export async function savePublisherConfig(file, record, { force = false, privateKeyFile } = {}) {
+  if (!force) {
+    try {
+      await readFile(file);
+      throw new Error(`${file} 已存在（轮换密钥请加 --force）`);
+    } catch (cause) {
+      if (cause.code !== 'ENOENT') throw cause;
+    }
+  }
+  const config = {
+    key_id: record.key_id,
+    public_key_hex: record.public_key_hex,
+    private_key_file: privateKeyFile ?? `keys/${record.key_id}.json`,
+  };
+  await writeFile(file, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  return config;
+}
+
+/** 解析签名私钥：--key > publisher.json > keys 目录中的唯一密钥。 */
+export async function resolveSigningKey({ keyPath, keysDir = 'keys', publisherFile = DEFAULT_PUBLISHER_FILE } = {}) {
   if (keyPath) return loadKeyFile(keyPath);
+  const publisher = await loadPublisherConfig(publisherFile);
+  if (publisher) {
+    const keyFile = path.resolve(publisher.private_key_file ?? path.join(keysDir, `${publisher.key_id}.json`));
+    let record;
+    try {
+      record = await loadKeyFile(keyFile);
+    } catch (cause) {
+      throw new Error(`发布方私钥不可用（${keyFile}）：${cause.message}`);
+    }
+    if (record.key_id !== publisher.key_id) {
+      throw new Error(`${publisherFile} 的 key_id 与 ${keyFile} 不一致`);
+    }
+    if (record.public_key_hex.toLowerCase() !== publisher.public_key_hex) {
+      throw new Error(`${publisherFile} 的公钥与 ${keyFile} 不匹配`);
+    }
+    return record;
+  }
   const keys = await loadKeysDirectory(keysDir);
   if (keys.size === 0) {
-    throw new Error(`未找到签名密钥。先运行 node tools/keygen.mjs 生成 ${keysDir}/dev-local.json，或用 --key 指定`);
+    throw new Error(`未找到签名密钥。先运行 node tools/keygen.mjs --publisher，或用 --key 指定`);
   }
   if (keys.size === 1) return [...keys.values()][0];
   const dev = keys.get('dev-local');
@@ -89,8 +153,13 @@ export async function resolveSigningKey({ keyPath, keysDir = 'keys' } = {}) {
   throw new Error(`密钥目录中有多个密钥（${[...keys.keys()].join(', ')}），请用 --key 指定`);
 }
 
-/** 解析信任公钥集合：--key / keys 目录 / --public-key keyid:hex。 */
-export async function resolveTrustedKeys({ keyPaths = [], keysDir = 'keys', publicKeyArgs = [] } = {}) {
+/** 解析信任公钥集合：--key / keys 目录 + publisher.json / --public-key keyid:hex。 */
+export async function resolveTrustedKeys({
+  keyPaths = [],
+  keysDir = 'keys',
+  publicKeyArgs = [],
+  publisherFile = DEFAULT_PUBLISHER_FILE,
+} = {}) {
   const result = new Map();
   for (const keyPath of keyPaths) {
     const record = await loadKeyFile(keyPath);
@@ -100,6 +169,8 @@ export async function resolveTrustedKeys({ keyPaths = [], keysDir = 'keys', publ
     const keys = await loadKeysDirectory(keysDir);
     for (const record of keys.values()) result.set(record.key_id, record.public_key_hex);
   }
+  const publisher = await loadPublisherConfig(publisherFile);
+  if (publisher) result.set(publisher.key_id, publisher.public_key_hex);
   for (const value of publicKeyArgs) {
     const [keyId, hex] = value.split(':', 2);
     if (!keyId || !/^[0-9a-fA-F]{64}$/.test(hex ?? '')) {

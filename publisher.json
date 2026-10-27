@@ -1,0 +1,5 @@
+{
+  "key_id": "cfms-plugin-publisher",
+  "public_key_hex": "cf721edd3d63a06f07c1be2099e7dfbf407c11a4726ad422415314ce6ab961de",
+  "private_key_file": "keys/cfms-plugin-publisher.json"
+}

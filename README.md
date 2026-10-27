@@ -18,6 +18,21 @@ node tools/enable-client-extensions.mjs --client ..\cfms_client_tauri
 node --test                                            # 工具链测试
 ```
 
+## 签名
+
+发布方用 Ed25519 私钥签插件包与 catalog：
+
+- `publisher.json`：仓库内配置，记录发布方 `key_id` 与公钥（**只有公钥**）。
+- `keys/<key_id>.json`：私钥文件，已被 gitignore，绝不提交；轮换时
+  `node tools/keygen.mjs --id <new-id> --publisher --force`。
+- `pack` 与 `catalog build` 默认使用 `publisher.json` 指向的密钥签名，无需额外参数。
+
+构建客户端时注入对应公钥（取自 `publisher.json`）：
+
+```powershell
+$env:CFMS_EXTENSION_TRUSTED_KEYS = "<publisher.json 的 key_id>:<public_key_hex>"
+```
+
 客户端当前 `USER_EXTENSIONS_ENABLED = false`，且只信任编译期注入的公钥
 （`CFMS_EXTENSION_TRUSTED_KEYS`）；需按 `enable-client-extensions.mjs` 输出的命令
 自行构建开发者版客户端后才能导入插件。已发布的安装包无法直接加载插件。

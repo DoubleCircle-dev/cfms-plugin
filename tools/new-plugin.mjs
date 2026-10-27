@@ -115,7 +115,7 @@ log.info('下一步：');
 log.info(`  1. 编辑 ${path.join(directory, 'manifest.json')} 与 pages/、workflows/`);
 log.info(`  2. node tools/pack.mjs ${directory}`);
 try {
-  await readFile(path.join('keys', 'dev-local.json'));
+  await readFile('publisher.json');
 } catch {
-  log.info('  0. 还没有开发密钥？先运行 node tools/keygen.mjs');
+  log.info('  0. 还没有发布方密钥？先运行 node tools/keygen.mjs --publisher');
 }

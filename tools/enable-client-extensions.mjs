@@ -71,6 +71,7 @@ try {
   const publicKeys = await resolveTrustedKeys({
     keyPaths: args.values.key ? [args.values.key] : [],
     keysDir: path.resolve(args.values.keys ?? 'keys'),
+    publisherFile: path.resolve('publisher.json'),
   });
   if (Object.keys(publicKeys).length === 0) {
     log.warn('没有找到任何开发密钥，构建出的客户端将不信任任何扩展包。先运行 node tools/keygen.mjs。');
