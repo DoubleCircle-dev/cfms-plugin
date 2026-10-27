@@ -21,5 +21,3 @@ node --test                                            # 工具链测试
 客户端当前 `USER_EXTENSIONS_ENABLED = false`，且只信任编译期注入的公钥
 （`CFMS_EXTENSION_TRUSTED_KEYS`）；需按 `enable-client-extensions.mjs` 输出的命令
 自行构建开发者版客户端后才能导入插件。已发布的安装包无法直接加载插件。
-
-`docs/` 与 `AGENTS.md` 为本地参考资料，已 gitignore，不属于仓库内容。
