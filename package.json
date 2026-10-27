@@ -11,6 +11,8 @@
     "keygen": "node tools/keygen.mjs",
     "new": "node tools/new-plugin.mjs",
     "pack": "node tools/pack.mjs",
+    "build": "node tools/build.mjs",
+    "publish": "node tools/publish.mjs",
     "verify": "node tools/verify.mjs",
     "catalog": "node tools/catalog.mjs",
     "client:enable-extensions": "node tools/enable-client-extensions.mjs",

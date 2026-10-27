@@ -25,9 +25,8 @@ function baseManifest(id) {
   };
 }
 
-/** 创建临时插件目录，返回 { dir, manifest, cleanup }。 */
-export async function createFixturePlugin({ id = 'com.example.fixture', version = '1.0.0' } = {}) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'cfms-plugin-fixture-'));
+/** 在指定目录写入一个合法插件；返回 { dir, manifest }。 */
+export async function writeFixturePlugin(directory, { id = 'com.example.fixture', version = '1.0.0' } = {}) {
   const manifest = baseManifest(id);
   manifest.version = version;
   const page = {
@@ -43,14 +42,20 @@ export async function createFixturePlugin({ id = 'com.example.fixture', version 
     start: 'hello',
     nodes: [{ id: 'hello', type: 'result', value: true }],
   };
-  await mkdir(path.join(dir, 'pages'), { recursive: true });
-  await mkdir(path.join(dir, 'workflows'), { recursive: true });
-  await writeFile(path.join(dir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-  await writeFile(path.join(dir, 'pages', 'overview.json'), `${JSON.stringify(page, null, 2)}\n`);
-  await writeFile(path.join(dir, 'workflows', 'hello.json'), `${JSON.stringify(workflow, null, 2)}\n`);
+  await mkdir(path.join(directory, 'pages'), { recursive: true });
+  await mkdir(path.join(directory, 'workflows'), { recursive: true });
+  await writeFile(path.join(directory, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(path.join(directory, 'pages', 'overview.json'), `${JSON.stringify(page, null, 2)}\n`);
+  await writeFile(path.join(directory, 'workflows', 'hello.json'), `${JSON.stringify(workflow, null, 2)}\n`);
+  return { dir: directory, manifest };
+}
+
+/** 创建临时插件目录，返回 { dir, manifest, cleanup }。 */
+export async function createFixturePlugin(options = {}) {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'cfms-plugin-fixture-'));
+  const fixture = await writeFixturePlugin(dir, options);
   return {
-    dir,
-    manifest,
+    ...fixture,
     cleanup: () => rm(dir, { recursive: true, force: true }),
   };
 }

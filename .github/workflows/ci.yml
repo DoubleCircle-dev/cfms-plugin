@@ -20,15 +20,22 @@ jobs:
       - name: Generate ephemeral publisher key
         run: node tools/keygen.mjs --id ci-publisher --publisher --force
 
-      - name: Generate and pack a plugin
+      - name: Generate fixture plugins
         run: |
-          node tools/new-plugin.mjs com.example.ci-demo --dir .tmp/ci-demo
-          node tools/pack.mjs .tmp/ci-demo
+          node tools/new-plugin.mjs com.example.ci-a --dir .tmp/plugins/ci-a
+          node tools/new-plugin.mjs com.example.ci-b --dir .tmp/plugins/ci-b
 
-      - name: Verify package
-        run: node tools/verify.mjs dist/*.cfmsext
-
-      - name: Build and verify catalog
+      - name: Build all plugins with catalog
         run: |
-          node tools/catalog.mjs build --base-url https://example.github.io/cfms-plugin/v1
-          node tools/catalog.mjs verify dist/catalog/catalog.json
+          node tools/build.mjs --plugins .tmp/plugins --out .tmp/dist \
+            --base-url https://example.github.io/cfms-plugin/releases/download/plugins
+
+      - name: Verify packages and catalog
+        run: |
+          node tools/verify.mjs .tmp/dist/*.cfmsext
+          node tools/catalog.mjs verify .tmp/dist/catalog/catalog.json
+
+      - name: Publish dry-run
+        run: |
+          node tools/publish.mjs --plugins .tmp/plugins --out .tmp/dist --dry-run \
+            --repo example/cfms-plugin

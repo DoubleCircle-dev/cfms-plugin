@@ -1,0 +1,1 @@
+# 每个插件一个文件夹：plugins/<name>/manifest.json + pages/ + workflows/
