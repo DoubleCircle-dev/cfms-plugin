@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run toolchain tests
+        run: npm test
+
+      - name: Generate ephemeral signing key
+        run: node tools/keygen.mjs
+
+      - name: Generate and pack a plugin
+        run: |
+          node tools/new-plugin.mjs com.example.ci-demo --dir .tmp/ci-demo
+          node tools/pack.mjs .tmp/ci-demo
+
+      - name: Verify package
+        run: node tools/verify.mjs dist/*.cfmsext
+
+      - name: Build and verify catalog
+        run: |
+          node tools/catalog.mjs build --base-url https://example.github.io/cfms-plugin/v1
+          node tools/catalog.mjs verify dist/catalog/catalog.json

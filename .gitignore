@@ -1,0 +1,21 @@
+# 仅供本地参考的说明文档，不进入仓库
+docs/
+AGENTS.md
+
+# 依赖与构建产物
+node_modules/
+dist/
+*.cfmsext
+
+# 本地签名私钥，绝不提交
+keys/
+
+# 本地临时目录
+.tmp/
+acl-recovery/
+
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
